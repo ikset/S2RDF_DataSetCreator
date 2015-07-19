@@ -1,0 +1,71 @@
+/* Copyright Simon Skilevic
+ * Master Thesis for Chair of Databases and Information Systems
+ * Uni Freiburg
+ */
+
+package dataCreator
+
+import org.apache.spark.SparkContext
+import org.apache.spark.SparkConf
+import org.apache.spark.sql.SQLContext;
+
+/**
+ * Different settings for the DataSetGenerator
+ * TODO: implement reading of settings from config file.
+ */
+object Settings {
+  val sparkContext = loadSparkContext();
+  var sqlContext = loadSqlContext();
+  
+  // ScaleUB (Scale Upper Bound) controls the storing overhead.
+  // Set it to 1 (default) to store all possible ExtVP tables. Reduce this value
+  // to avoid storing of ExtVP tables having size bigger than ScaleUB * (size of
+  // corresponding VP table). In this way, we avoid storing of the biggest 
+  // tables, which are most ineffective at the same time, since they are 
+  // not able to significantly improve selectivity of correponding triple 
+  // pattern
+  val ScaleUB = 1:Float
+  
+  // database name
+  val baseName = "WatDiv1M_test"
+  // the database directory in HDFS
+  var workingDir = "/user/skilevic/" + baseName+"/"
+  // path to the input RDF file  
+  var inputRDFSet = workingDir + "base.txt"
+  // path to Parquet file for the Triple Table
+  val tripleTable = workingDir + "base.parquet"  
+  // path to the directory for all VP tables 
+  var vpDir = workingDir + "VP/"
+  // path to the directory for all ExtVP tables 
+  var extVpDir = workingDir+"ExtVP/"
+  
+  /**
+   * Create SparkContext.
+   * The overvie over settings: 
+   * http://spark.apache.org/docs/latest/programming-guide.html
+   */
+  def loadSparkContext(): SparkContext = {
+    
+    val conf = new SparkConf().setAppName("DataSetsCreator")
+                              .set("spark.executor.memory", "20g")
+                              .set("spark.sql.inMemoryColumnarStorage.compressed", "true")
+                              //.set("spark.sql.autoBroadcastJoinThreshold", "-1")
+                              .set("spark.sql.parquet.filterPushdown", "true")
+                              .set("spark.sql.inMemoryColumnarStorage.batchSize", "20000")
+                              .set("spark.storage.blockManagerSlaveTimeoutMs", "3000000")                              
+                              //.set("spark.sql.shuffle.partitions", "200")
+                              .set("spark.storage.memoryFraction", "0.5")
+    new SparkContext(conf);
+  }
+  
+  /**
+   * Create SQLContext.
+   */
+  def loadSqlContext(): SQLContext = {
+    val context = new org.apache.spark.sql.SQLContext(sparkContext)
+    import context.implicits._
+    //context.setConf("spark.storage.blockManagerSlaveTimeoutMs", "600"); 
+    context;    
+  }
+}
+
