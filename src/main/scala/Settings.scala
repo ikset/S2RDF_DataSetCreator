@@ -7,22 +7,22 @@ package dataCreator
 
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.SQLContext;
+import org.apache.spark.sql.SQLContext
 
 /**
  * Different settings for the DataSetGenerator
  * TODO: implement reading of settings from config file.
  */
 object Settings {
-  val sparkContext = loadSparkContext();
-  var sqlContext = loadSqlContext();
+  val sparkContext = loadSparkContext()
+  var sqlContext = loadSqlContext()
   
-  // ScaleUB (Scale Upper Bound) controls the storing overhead.
+  // ScaleUB (Scale Upper Bound) controls the storage overhead.
   // Set it to 1 (default) to store all possible ExtVP tables. Reduce this value
-  // to avoid storing of ExtVP tables having size bigger than ScaleUB * (size of
-  // corresponding VP table). In this way, we avoid storing of the biggest 
+  // to avoid storage of ExtVP tables having size bigger than ScaleUB * (size of
+  // corresponding VP table). In this way, we avoid storage of the biggest 
   // tables, which are most ineffective at the same time, since they are 
-  // not able to significantly improve selectivity of correponding triple 
+  // not able to significantly improve the selectivity of correponding triple 
   // pattern
   val ScaleUB = 1:Float
   
@@ -41,7 +41,7 @@ object Settings {
   
   /**
    * Create SparkContext.
-   * The overvie over settings: 
+   * The overview over settings: 
    * http://spark.apache.org/docs/latest/programming-guide.html
    */
   def loadSparkContext(): SparkContext = {
@@ -55,7 +55,7 @@ object Settings {
                               .set("spark.storage.blockManagerSlaveTimeoutMs", "3000000")                              
                               //.set("spark.sql.shuffle.partitions", "200")
                               .set("spark.storage.memoryFraction", "0.5")
-    new SparkContext(conf);
+    new SparkContext(conf)
   }
   
   /**
@@ -64,8 +64,7 @@ object Settings {
   def loadSqlContext(): SQLContext = {
     val context = new org.apache.spark.sql.SQLContext(sparkContext)
     import context.implicits._
-    //context.setConf("spark.storage.blockManagerSlaveTimeoutMs", "600"); 
-    context;    
+    context    
   }
 }
 

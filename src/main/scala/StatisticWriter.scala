@@ -49,7 +49,7 @@ object StatisticWriter {
   }
 
   /**
-   * Puts the tail at the and of written statistic files
+   * Puts the tail at the and of the written statistic files
    */
   def closeStatisticFile() = {
     val fw = new java.io.FileWriter(_statisticFileName, true)
@@ -90,16 +90,16 @@ object StatisticWriter {
     finally fw.close() 
   }
   /**
-   * Increment the counter for the saved tables
+   * Increments the counter for the saved tables
    */
   def incSavedTables() = {
     _savedTables += 1
   }
   
   /**
-   * Increment the counter for the unsaved tables, whiche are not empty, e.g. 
-   * ExtVP tables having size bigger than ScaleUB * Size of corresponding 
-   * VP table
+   * Increments the counter for the unsaved tables, which are not empty, e.g. 
+   * ExtVP tables having size bigger than ScaleUB * (Size of corresponding 
+   * VP table)
    */
   def incUnsavedNonEmptyTables() = {
     _unsavedNonEmptyTables += 1

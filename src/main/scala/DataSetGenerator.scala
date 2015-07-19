@@ -9,7 +9,7 @@ import collection.mutable.HashMap
  * DataSetGenerator creates for an input RDF dataset its reprsentations as 
  * Triple Table, Vertical Partiitoning and Extended Vertical Partitioning in 
  * HDFS.
- * TT hast to be created before VP and VP before ExtVP hence VP is used for 
+ * TT has to be created before VP and VP before ExtVP, since VP is used for 
  * ExtVP generating and TT is used for creation of VP and ExtVP.
  * 
  * The informations about created tables are saved to the statistics files using
@@ -51,9 +51,9 @@ object DataSetGenerator {
     // create Extended Vertical Partitioning
     Helper.removeDirInHDFS(Settings.extVpDir)
     Helper.createDirInHDFS(Settings.extVpDir)
-    createExtVP("SO");
-    createExtVP("OS");
-    createExtVP("SS");
+    createExtVP("SO")
+    createExtVP("OS")
+    createExtVP("SS")
   }
 
   // Triple Table schema
@@ -78,7 +78,7 @@ object DataSetGenerator {
   }
   /**
    * Generates VP table for each unique predicate in input RDF dataset.
-   * All tables have to cached, since they are used for generating of ExtVP 
+   * All tables have to be cached, since they are used for generation of ExtVP 
    * tables.
    */
   private def createVP() = {    
@@ -87,7 +87,7 @@ object DataSetGenerator {
     Helper.createDirInHDFS(Settings.vpDir)
     StatisticWriter.initNewStatisticFile("VP")
 
-    // create and cache vpTable for predicate in input RDF dataset
+    // create and cache vpTables for all predicates in input RDF dataset
     for (predicate <- _uPredicates){      
       var vpTable = _sqlContext.sql("select sub, obj "
                                   + "from triples where pred='"+predicate+"' ")          
@@ -100,7 +100,7 @@ object DataSetGenerator {
       vpTable.saveAsParquetFile(Settings.vpDir + cleanPredicate + ".parquet")
             
       // print statistic line
-      StatisticWriter.incSavedTables();
+      StatisticWriter.incSavedTables()
       StatisticWriter.addTableStatistic("<" + predicate + ">", 
                                         -1, 
                                         _vpTableSizes(predicate)) 
@@ -119,9 +119,9 @@ object DataSetGenerator {
     Helper.createDirInHDFS(Settings.extVpDir+relType)
     StatisticWriter.initNewStatisticFile(relType)
     
-    var savedTables = 0;
-    var unsavedNonEmptyTables = 0;
-    var createdDirs = List[String]();
+    var savedTables = 0
+    var unsavedNonEmptyTables = 0
+    var createdDirs = List[String]()
     
     // for every VP table generate a set of ExtVP tables, which represent its
     // (relType)-relations to the other VP tables
@@ -134,24 +134,24 @@ object DataSetGenerator {
       for (pred2 <- relatedPredicates) {                
         var extVpTableSize = -1: Long
         
-        // we avoid generating of ExtVP tables coressponding to subject-subject
-        // relation to it self, since such tables are always equal to 
-        // corresponding VP table
+        // we avoid generation of ExtVP tables corresponding to subject-subject
+        // relation to it self, since such tables are always equal to the
+        // corresponding VP tables
         if (!(relType == "SS" && pred1 == pred2)) {
           var sqlCommand = getExtVpSQLcommand(pred1, pred2, relType)
-          var extVpTable = _sqlContext.sql(sqlCommand);
+          var extVpTable = _sqlContext.sql(sqlCommand)
           extVpTable.registerTempTable("extvp_table")
-          // cache table to avoid recomputing of DF by storing to HDFS       
+          // cache table to avoid recomputation of DF by storage to HDFS       
           _sqlContext.cacheTable("extvp_table")
-          extVpTableSize = extVpTable.count();  
+          extVpTableSize = extVpTable.count()  
 
-          // Save ExtVP table in case if its size smaller than
+          // save ExtVP table in case if its size smaller than
           // ScaleUB*size(corresponding VPTable)
           if (extVpTableSize < _vpTableSizes(pred1) * Settings.ScaleUB) {
             
             // create directory extVP/relType/pred1 if not exists
             if (!createdDirs.contains(pred1)) {
-              createdDirs = pred1 :: createdDirs;
+              createdDirs = pred1 :: createdDirs
               Helper.createDirInHDFS(Settings.extVpDir 
                                      + relType + "/" 
                                      + Helper.getPartName(pred1))
@@ -163,15 +163,15 @@ object DataSetGenerator {
                                          + Helper.getPartName(pred1) + "/"
                                          + Helper.getPartName(pred2)
                                          + ".parquet")
-            StatisticWriter.incSavedTables();
+            StatisticWriter.incSavedTables()
           } else {
-            StatisticWriter.incUnsavedNonEmptyTables();
+            StatisticWriter.incUnsavedNonEmptyTables()
           }
           
           _sqlContext.uncacheTable("extvp_table")
           
         } else {
-          extVpTableSize = _vpTableSizes(pred1);
+          extVpTableSize = _vpTableSizes(pred1)
         }
 
         // print statistic line

@@ -13,14 +13,14 @@ import scala.sys.process._
 object Helper {
 
   /**
-   * transform table name for saving table in HDFS
+   * transform table name for storage table in HDFS
    */ 
   def getPartName(v: String): String = {
     v.replaceAll(":", "__")
   }
   
   /**
-   * float to String formated
+   * Float to String formated
    */
   def fmt(v: Any): String = v match {
     case d : Double => "%1.2f" format d
