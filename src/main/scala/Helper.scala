@@ -40,7 +40,7 @@ object Helper {
    * remove directory in HDFS (if not exists -> it's ok :))
    */
   def removeDirInHDFS(path: String) = {
-    val cmd = "hdfs dfs -rm -r " + path    
+    val cmd = "hdfs dfs -rm -f -r " + path    
     val output = cmd.!!
   }
   

@@ -31,12 +31,20 @@ object DataSetGenerator {
   
   /**
    * generate all datasets (TT, VP, ExtVP)
+   * It becomes as an input a varible containing string ("VP","SO","OS","SS")
+   * Functions creates --> 
+   *  TT and VP tables for "VP"
+   *  Loads TT, VP to the main memory and creates SO for input string "SO"
+   *  Loads TT, VP to the main memory and creates OS for input string "OS"
+   *  Loads TT, VP to the main memory and creates SS for input string "SS"
+   *  
+   *  The program assumes that TT and VP are already generated for creation of
+   *  SO,OS,SS
    */
-  def generateDataSet() = {
+  def generateDataSet(datasetType: String) = {
     
-    // create TripleTable
-    createTT()
-    
+    // create or load TripleTable if already created
+    if (datasetType == "VP") createTT() else loadTT()
     // extarct all unique predicates from TripleTable
     // necessary for VP/ExtVP generation
     _uPredicates = _sqlContext.sql("select distinct pred from triples")
@@ -45,19 +53,25 @@ object DataSetGenerator {
 
     StatisticWriter.init(_uPredicates.size, _inputSize)
     
-    // create Vertical Partitioning
-    createVP()
-    
-    // create Extended Vertical Partitioning
-    Helper.removeDirInHDFS(Settings.extVpDir)
-    Helper.createDirInHDFS(Settings.extVpDir)
-    createExtVP("SO")
-    createExtVP("OS")
-    createExtVP("SS")
+    // create or load Vertical Partitioning if already exists
+    if (datasetType == "VP") createVP() else loadVP()
+        
+    // if we create/recreate VP than we gonna later probably create/recreate 
+    // ExtVP. Out of this reason we remove ExtVP directory containing old tables
+    // and create it empty again
+    if (datasetType == "VP"){
+      Helper.removeDirInHDFS(Settings.extVpDir)
+      Helper.createDirInHDFS(Settings.extVpDir)
+    }
+    // create Extended Vertical Partitioning table set definded by datasetType
+    if (datasetType == "SO") createExtVP("SO")
+    else if (datasetType == "OS") createExtVP("OS")
+    else if (datasetType == "SS") createExtVP("SS")
   }
 
   // Triple Table schema
   case class Triple(sub: String, pred: String, obj: String)
+
   /**
    * Generate TripleTable and save it to Parquet file in HDFS.
    * The table has to be cached, since it is used for generation of VP and ExtVP
@@ -67,7 +81,10 @@ object DataSetGenerator {
                          .map(_.split("\t"))
                          .map(p => Triple(p(0), p(1), p(2)))
                          .toDF()
-                         .distinct
+    // Commented out due to execution problem for dataset of 1 Bil triples
+    // We do not need it anyway if the input dataset is correct and has no
+    // double ellements. It was not the case for WatDiv
+    //                     .distinct  
     df.registerTempTable("triples")     
     _sqlContext.cacheTable("triples")
     _inputSize = df.count()
@@ -76,6 +93,18 @@ object DataSetGenerator {
     Helper.removeDirInHDFS(Settings.tripleTable)
     df.saveAsParquetFile(Settings.tripleTable)
   }
+  
+  /**
+   * Loads TT table and caches it to main memory.
+   * TT table is used for generation of ExtVP and VP tables
+   */
+  private def loadTT() = {  
+    val df = _sqlContext.parquetFile(Settings.tripleTable);
+    df.registerTempTable("triples")     
+    _sqlContext.cacheTable("triples")
+    _inputSize = df.count()
+  }
+  
   /**
    * Generates VP table for each unique predicate in input RDF dataset.
    * All tables have to be cached, since they are used for generation of ExtVP 
@@ -107,7 +136,24 @@ object DataSetGenerator {
     }
     
     StatisticWriter.closeStatisticFile()
-  }  
+  }
+  
+  /**
+   * Loads VP tables and caches them to main memory.
+   * VP tables are used for generation of ExtVP tables
+   */
+  private def loadVP() = {  
+    for (predicate <- _uPredicates){      
+      val cleanPredicate = Helper.getPartName(predicate)    
+      var vpTable = _sqlContext.parquetFile(Settings.vpDir 
+                                            + cleanPredicate 
+                                            + ".parquet")          
+            
+      vpTable.registerTempTable(cleanPredicate)
+      _sqlContext.cacheTable(cleanPredicate)
+      _vpTableSizes(predicate) = vpTable.count()
+    }
+  }
   
   /**
    * Generates ExtVP tables for all (relType(SO/OS/SS))-relations of all 

@@ -24,12 +24,12 @@ object Settings {
   // tables, which are most ineffective at the same time, since they are 
   // not able to significantly improve the selectivity of correponding triple 
   // pattern
-  val ScaleUB = 1:Float
+  var ScaleUB = 1:Float
   
   // database name
-  val baseName = "WatDiv1M_test"
+  //val baseName = "WatDiv1000M_test"
   // the database directory in HDFS
-  var workingDir = "/user/skilevic/" + baseName+"/"
+  var workingDir = "/user/skilevic/" + "WatDiv1000M_test" + "/"
   // path to the input RDF file  
   var inputRDFSet = workingDir + "base.txt"
   // path to Parquet file for the Triple Table
@@ -47,7 +47,7 @@ object Settings {
   def loadSparkContext(): SparkContext = {
     
     val conf = new SparkConf().setAppName("DataSetsCreator")
-                              .set("spark.executor.memory", "20g")
+                              .set("spark.executor.memory", "16g")
                               .set("spark.sql.inMemoryColumnarStorage.compressed", "true")
                               //.set("spark.sql.autoBroadcastJoinThreshold", "-1")
                               .set("spark.sql.parquet.filterPushdown", "true")
