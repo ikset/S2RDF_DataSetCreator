@@ -29,21 +29,32 @@ object Settings {
   // database name
   //val baseName = "WatDiv1000M_test"
   // the database directory in HDFS
-  var workingDir = "/user/skilevic/" + "WatDiv1000M_test" + "/"
+  var workingDir = ""
   // path to the input RDF file  
-  var inputRDFSet = workingDir + "base.txt"
+  var inputRDFSet = ""
   // path to Parquet file for the Triple Table
-  val tripleTable = workingDir + "base.parquet"  
+  var tripleTable = ""
   // path to the directory for all VP tables 
-  var vpDir = workingDir + "VP/"
+  var vpDir = ""
   // path to the directory for all ExtVP tables 
-  var extVpDir = workingDir+"ExtVP/"
+  var extVpDir = ""
+  
+  def loadUserSettings(inFilePath:String, 
+                   inFileName:String, 
+                   scale:Float) = {
+    this.ScaleUB = scale
+    this.workingDir = inFilePath
+    this.inputRDFSet = inFilePath + inFileName
+    this.tripleTable = this.workingDir + "base.parquet" 
+    this.vpDir = this.workingDir + "VP/" 
+    this.extVpDir = this.workingDir + "ExtVP/" 
+  }
   
   /**
    * Create SparkContext.
    * The overview over settings: 
    * http://spark.apache.org/docs/latest/programming-guide.html
-   */
+   */   
   def loadSparkContext(): SparkContext = {
     
     val conf = new SparkConf().setAppName("DataSetsCreator")
